@@ -52,34 +52,14 @@ public class DrawingView extends View {
         circlePaint.setStrokeWidth(4f);
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-
-        mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        mCanvas = new Canvas(mBitmap);
-    }
-
     public void setCanvas(Bitmap image, Rect rect) {
 
         Matrix matrix = new Matrix();
 
-        float px = rect.exactCenterX();
-        float py = rect.exactCenterY();
-
-        matrix.postTranslate(-image.getWidth()/2, -image.getHeight()/2);
+        matrix.preTranslate(-image.getWidth()/2, -image.getHeight()/2);
         matrix.postRotate(90.0f);
         matrix.postTranslate(60, 50);
 
-        int width = image.getWidth();
-        int height = image.getHeight();
-        int newWidth = 200;
-        int newHeight = 200;
-
-        // calculate the scale - in this case = 0.4f
-        float scaleWidth = ((float) newWidth) / width;
-        float scaleHeight = ((float) newHeight) / height;
-        // resize the bit map
         matrix.postScale(8f, 8f);
 
         mCanvas.drawBitmap(image, matrix, null);
@@ -88,6 +68,14 @@ public class DrawingView extends View {
 
         //drawing with rect, no rotation
         //mCanvas.drawBitmap(image, null, rect, null);
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+
+        mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(mBitmap);
     }
 
     @Override
