@@ -1,6 +1,7 @@
 package ca.joel.slider;
 
 import android.content.Context;
+import android.net.Uri;
 import android.support.v4.view.PagerAdapter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,27 +10,32 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CustomSwipeAdapter extends PagerAdapter{
 
-    private int[] image_resources = {R.drawable.bob1, R.drawable.bob2};
+    private List<Uri> images = new ArrayList<>();
     private Context context;
-    private LayoutInflater inflater;
-
 
     public CustomSwipeAdapter(Context context) {
         this.context = context;
     }
 
+    public void add(Uri uri) {
+        images.add(uri);
+    }
+
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
 
-        inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View item = inflater.inflate(R.layout.swipe_layout, container, false);
 
         ImageView imvImage = (ImageView) item.findViewById(R.id.imvImage);
         TextView txvTitle = (TextView) item.findViewById(R.id.txvTitle);
 
-        imvImage.setImageResource(image_resources[position]);
+        imvImage.setImageURI(images.get(position));
         txvTitle.setText("Image: " + position);
 
         container.addView(item);
@@ -44,11 +50,11 @@ public class CustomSwipeAdapter extends PagerAdapter{
 
     @Override
     public int getCount() {
-        return image_resources.length;
+        return images.size();
     }
 
     @Override
     public boolean isViewFromObject(View view, Object object) {
-        return view == (LinearLayout)object;
+        return view == object;
     }
 }
