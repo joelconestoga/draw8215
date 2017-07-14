@@ -8,7 +8,6 @@ import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
@@ -18,7 +17,6 @@ import java.io.File;
 public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_TAKE_PHOTO = 1;
-    static final int REQUEST_OPEN_GALLERY = 2;
     static final int REQUEST_SHOW_DRAWINGS = 3;
 
     RelativeLayout drawingArea;
@@ -49,21 +47,10 @@ public class MainActivity extends AppCompatActivity {
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    openCamera();
                     fabMenu.close(true);
+                    openCamera();
                 }
             }
-        );
-
-        FloatingActionButton fabGallery = (FloatingActionButton) findViewById(R.id.fabGallery);
-        fabGallery.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        openGallery();
-                        fabMenu.close(true);
-                    }
-                }
         );
 
         FloatingActionButton fabSave = (FloatingActionButton) findViewById(R.id.fabSave);
@@ -71,8 +58,8 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        drawingView.saveCanvasImage(photoFilePath);
                         fabMenu.close(true);
+                        drawingView.saveCanvasImage(photoFilePath);
                     }
                 }
         );
@@ -82,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        fabMenu.close(false);
                         openDrawings();
-                        fabMenu.close(true);
                     }
                 }
         );
@@ -107,12 +94,6 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, REQUEST_TAKE_PHOTO);
     }
 
-    private void openGallery() {
-        Intent gallery = new Intent(Intent.ACTION_GET_CONTENT);
-        gallery.setType("image/*");
-        startActivityForResult(gallery, REQUEST_OPEN_GALLERY);
-    }
-
     private void openDrawings() {
         Intent intent = new Intent(MainActivity.this, SliderActivity.class);
         startActivityForResult(intent, REQUEST_SHOW_DRAWINGS);
@@ -131,9 +112,6 @@ public class MainActivity extends AppCompatActivity {
                         drawingArea.getWidth(), drawingArea.getHeight());
                 photo = ImageUtils.rotateImage(photoFilePath, photo);
                 drawingView.setCanvasImage(photo);
-                break;
-            case REQUEST_OPEN_GALLERY:
-                Toast.makeText(this, "galeria a a a a...", Toast.LENGTH_LONG).show();
                 break;
             case REQUEST_SHOW_DRAWINGS:
                 break;
