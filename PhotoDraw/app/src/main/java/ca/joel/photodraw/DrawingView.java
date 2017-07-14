@@ -10,10 +10,13 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.media.ExifInterface;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class DrawingView extends View {
@@ -43,6 +46,15 @@ public class DrawingView extends View {
         canvasImage = photo;
         canvas.drawBitmap(canvasImage, 0, 0, null);
         canvas.setBitmap(canvasImage);
+    }
+
+    public void saveCanvasImage(String photoFilePath) {
+        File file = new File(photoFilePath);
+        try {
+            canvasImage.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(file));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void setupDraw() {
