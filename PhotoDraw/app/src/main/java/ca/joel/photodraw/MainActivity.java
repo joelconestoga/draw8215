@@ -10,12 +10,15 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
+
+import com.github.clans.fab.FloatingActionButton;
+import com.github.clans.fab.FloatingActionMenu;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +30,7 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_TAKE_PHOTO = 1;
+    static final int REQUEST_TAKE_GALLERY = 2;
 
     RelativeLayout drawingArea;
     DrawingView drawingView;
@@ -43,15 +47,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-        FloatingActionButton fabMenu = (FloatingActionButton) findViewById(R.id.fabMenu);
+        final FloatingActionMenu fabMenu = (FloatingActionMenu) findViewById(R.id.fabMenu);
 
-        fabMenu.setOnClickListener(
+        FloatingActionButton fabCamera = (FloatingActionButton) findViewById(R.id.fabCamera);
+        fabCamera.setOnClickListener(
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     openCamera();
+                    fabMenu.close(true);
                 }
             }
+        );
+
+        FloatingActionButton fabGallery = (FloatingActionButton) findViewById(R.id.fabGallery);
+        fabGallery.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        openGallery();
+                        fabMenu.close(true);
+                    }
+                }
         );
     }
 
@@ -80,14 +97,31 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, REQUEST_TAKE_PHOTO);
     }
 
+    private void openGallery() {
+        Intent gallery = new Intent(Intent.ACTION_GET_CONTENT);
+        gallery.setType("image/*");
+        startActivityForResult(gallery, REQUEST_TAKE_GALLERY);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        Bitmap photo = retrieveImageFromFile(photoFilePath);
-        photo = rotateImage(photoFilePath, photo);
+        if (resultCode != RESULT_OK)
+            return;
 
-        drawingView.setCanvasImage(photo);
+        switch (requestCode) {
+            case REQUEST_TAKE_PHOTO:
+                Bitmap photo = retrieveImageFromFile(photoFilePath);
+                photo = rotateImage(photoFilePath, photo);
+                drawingView.setCanvasImage(photo);
+                break;
+            case REQUEST_TAKE_GALLERY:
+                Toast.makeText(this, "galeria a a a a...", Toast.LENGTH_LONG).show();
+                break;
+            default:
+                break;
+        }
     }
 
     private void grantUriPermissions(Intent intent, Uri photoURI) {
