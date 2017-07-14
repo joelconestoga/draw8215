@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
     RelativeLayout drawingArea;
     DrawingView drawingView;
 
-    String photoFilePath;
+    String photoFilePath = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupButtons() {
         final FloatingActionMenu fabMenu = (FloatingActionMenu) findViewById(R.id.fabMenu);
+        final FloatingActionMenu fabTools = (FloatingActionMenu) findViewById(R.id.fabTools);
 
         FloatingActionButton fabCamera = (FloatingActionButton) findViewById(R.id.fabCamera);
         fabCamera.setOnClickListener(
@@ -59,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v) {
                         fabMenu.close(true);
-                        drawingView.saveCanvasImage(photoFilePath);
+                        saveCanvasImage();
                     }
                 }
         );
@@ -71,6 +72,28 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         fabMenu.close(false);
                         openDrawings();
+                    }
+                }
+        );
+
+        FloatingActionButton fabText = (FloatingActionButton) findViewById(R.id.fabText);
+        fabText.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        fabTools.close(false);
+                        drawingView.setWriting();
+                    }
+                }
+        );
+
+        FloatingActionButton fabBrush = (FloatingActionButton) findViewById(R.id.fabBrush);
+        fabBrush.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        fabTools.close(false);
+                        drawingView.setDrawing();
                     }
                 }
         );
@@ -120,4 +143,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void saveCanvasImage() {
+
+        if ("".equals(photoFilePath)) {
+            File photoFile = ImageUtils.createPhotoEmptyFile(this);
+            photoFilePath = photoFile.getAbsolutePath();
+        }
+
+        drawingView.saveCanvasImage(photoFilePath);
+    }
 }
