@@ -9,82 +9,81 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
+import android.media.ExifInterface;
+import android.support.annotation.Nullable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.io.IOException;
+
 public class DrawingView extends View {
 
-    private float mX, mY;
     private static final float TOUCH_TOLERANCE = 4;
 
-    private MainActivity mainActivity;
-    public int width;
-    public int height;
-    private Bitmap mBitmap;
-    private Canvas mCanvas;
-    private Path mPath;
-    private Paint mBitmapPaint;
-    Context context;
-    private Paint circlePaint;
-    private Path circlePath;
+    private float mX, mY;
 
-    Bitmap image;
+    private Canvas canvas;
 
-    public DrawingView(MainActivity mainActivity, Context c, Bitmap image) {
+    private Bitmap canvasImage;
+
+    private Paint draw;
+    private Paint roundBrush;
+
+    private Path drawPath;
+    private Path roundBrushPath;
+
+    public DrawingView(Context c) {
         super(c);
 
-        this.mainActivity = mainActivity;
-        this.image = image;
-
-        context = c;
-
-        mPath = new Path();
-        mBitmapPaint = new Paint(Paint.DITHER_FLAG);
-
-        circlePaint = new Paint();
-        circlePath = new Path();
-        circlePaint.setAntiAlias(true);
-        circlePaint.setColor(Color.BLUE);
-        circlePaint.setStyle(Paint.Style.STROKE);
-        circlePaint.setStrokeJoin(Paint.Join.MITER);
-        circlePaint.setStrokeWidth(4f);
+        setupDraw();
+        setupBrush();
     }
 
-    public void setCanvas(Bitmap image, Rect rect) {
+    public void setCanvasImage(Bitmap photo) {
+        canvasImage = photo;
+        canvas.drawBitmap(canvasImage, 0, 0, null);
+        canvas.setBitmap(canvasImage);
+    }
 
-        Matrix matrix = new Matrix();
+    private void setupDraw() {
+        draw = new Paint();
+        draw.setAntiAlias(true);
+        draw.setDither(true);
+        draw.setColor(Color.GREEN);
+        draw.setStyle(Paint.Style.STROKE);
+        draw.setStrokeJoin(Paint.Join.ROUND);
+        draw.setStrokeCap(Paint.Cap.ROUND);
+        draw.setStrokeWidth(12);
 
-        matrix.preTranslate(-image.getWidth()/2, -image.getHeight()/2);
-        matrix.postRotate(90.0f);
-        matrix.postTranslate(60, 50);
+        drawPath = new Path();
+    }
 
-        matrix.postScale(8f, 8f);
+    private void setupBrush() {
+        roundBrush = new Paint();
+        roundBrush.setAntiAlias(true);
+        roundBrush.setColor(Color.BLUE);
+        roundBrush.setStyle(Paint.Style.STROKE);
+        roundBrush.setStrokeJoin(Paint.Join.MITER);
+        roundBrush.setStrokeWidth(4f);
 
-        mCanvas.drawBitmap(image, matrix, null);
-        matrix.reset();
-        invalidate();
-
-        //drawing with rect, no rotation
-        //mCanvas.drawBitmap(image, null, rect, null);
+        roundBrushPath = new Path();
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        mCanvas = new Canvas(mBitmap);
+        canvasImage = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        canvas = new Canvas(canvasImage);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
-        canvas.drawPath(mPath, mainActivity.mPaint);
-        canvas.drawPath(circlePath, circlePaint);
+        canvas.drawBitmap(canvasImage, 0, 0, draw);
+        canvas.drawPath(drawPath, draw);
+        canvas.drawPath(roundBrushPath, roundBrush);
     }
 
     @Override
@@ -110,8 +109,8 @@ public class DrawingView extends View {
     }
 
     private void touch_start(float x, float y) {
-        mPath.reset();
-        mPath.moveTo(x, y);
+        drawPath.reset();
+        drawPath.moveTo(x, y);
         mX = x;
         mY = y;
     }
@@ -120,22 +119,22 @@ public class DrawingView extends View {
         float dx = Math.abs(x - mX);
         float dy = Math.abs(y - mY);
         if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
-            mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
+            drawPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
             mX = x;
             mY = y;
 
-            circlePath.reset();
-            circlePath.addCircle(mX, mY, 30, Path.Direction.CW);
+            roundBrushPath.reset();
+            roundBrushPath.addCircle(mX, mY, 30, Path.Direction.CW);
         }
     }
 
     private void touch_up() {
-        mPath.lineTo(mX, mY);
-        circlePath.reset();
+        drawPath.lineTo(mX, mY);
+        roundBrushPath.reset();
         // commit the path to our offscreen
-        mCanvas.drawPath(mPath, mainActivity.mPaint);
+        canvas.drawPath(drawPath, draw);
         // kill this so we don't double draw
-        mPath.reset();
+        drawPath.reset();
     }
 
 }

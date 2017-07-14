@@ -1,37 +1,37 @@
 package ca.joel.photodraw;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
+import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v4.app.ActivityCompat;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Layout;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    DrawingView dv ;
-    public Paint mPaint;
-    Bitmap image;
-    RelativeLayout lytCanvas;
+    static final int REQUEST_TAKE_PHOTO = 1;
+
+    RelativeLayout drawingArea;
+    DrawingView drawingView;
+
+    String photoFilePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,41 +43,145 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
-        Button btnCamera = (Button) findViewById(R.id.btnCamera);
+        FloatingActionButton fabMenu = (FloatingActionButton) findViewById(R.id.fabMenu);
 
-        btnCamera.setOnClickListener(
+        fabMenu.setOnClickListener(
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    startActivityForResult(intent, 0);
+                    openCamera();
                 }
             }
         );
     }
 
     private void setupPaint() {
-        lytCanvas = (RelativeLayout) findViewById(R.id.lytCanvas);
+        drawingArea = (RelativeLayout) findViewById(R.id.drawingArea);
+        drawingView = new DrawingView(this);
+        drawingArea.addView(drawingView);
+    }
 
-        dv = new DrawingView(this, this, image);
-        lytCanvas.addView(dv);
+    private void openCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 
-        mPaint = new Paint();
-        mPaint.setAntiAlias(true);
-        mPaint.setDither(true);
-        mPaint.setColor(Color.GREEN);
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.ROUND);
-        mPaint.setStrokeWidth(12);
+        if (intent.resolveActivity(getPackageManager()) == null)
+            return;
+
+        File photoFile = createPhotoEmptyFile();
+        photoFilePath = photoFile.getAbsolutePath();
+
+        Uri photoURI = FileProvider.getUriForFile(this,
+                "ca.joel.photodraw.fileprovider", photoFile);
+
+        grantUriPermissions(intent, photoURI);
+
+        intent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, photoURI);
+
+        startActivityForResult(intent, REQUEST_TAKE_PHOTO);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        image = (Bitmap) data.getExtras().get("data");
-        Rect rect = new Rect(0, 0, lytCanvas.getWidth(), lytCanvas.getHeight());
-        dv.setCanvas(image, rect);
+        Bitmap photo = retrieveImageFromFile(photoFilePath);
+        photo = rotateImage(photoFilePath, photo);
+
+        drawingView.setCanvasImage(photo);
     }
+
+    private void grantUriPermissions(Intent intent, Uri photoURI) {
+        List<ResolveInfo> resolvedIntentActivities = this.getPackageManager().
+                queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+
+        for (ResolveInfo resolvedIntentInfo : resolvedIntentActivities) {
+            String packageName = resolvedIntentInfo.activityInfo.packageName;
+            this.grantUriPermission(packageName, photoURI,
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION |
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }
+    }
+
+    private File createPhotoEmptyFile() {
+
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CANADA).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = null;
+
+        try {
+            image = File.createTempFile(imageFileName, ".jpg", storageDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return image;
+    }
+
+    private Bitmap retrieveImageFromFile(String photoPath) {
+        int targetW = drawingArea.getWidth();
+        int targetH = drawingArea.getHeight();
+
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = true;
+
+        BitmapFactory.decodeFile(photoPath, bmOptions);
+
+        int photoW = bmOptions.outWidth;
+        int photoH = bmOptions.outHeight;
+
+        // Determine how much to scale down the image
+        int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
+
+        // Decode the image file into a Bitmap sized to fill the View
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = scaleFactor;
+        bmOptions.inPurgeable = true;
+
+        return BitmapFactory.decodeFile(photoPath, bmOptions);
+    }
+
+    private Bitmap rotateImage(String photoPath, Bitmap photo) {
+
+        ExifInterface ei;
+        int orientation = 0;
+
+        try {
+            ei = new ExifInterface(photoPath);
+            orientation = ei.getAttributeInt(
+                    ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_UNDEFINED);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        switch(orientation) {
+
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                photo = doRotate(photo, 90);
+                break;
+
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                photo = doRotate(photo, 180);
+                break;
+
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                photo = doRotate(photo, 270);
+                break;
+
+            case ExifInterface.ORIENTATION_NORMAL:
+
+            default:
+                break;
+        }
+        return photo;
+    }
+
+    public static Bitmap doRotate(Bitmap source, float angle) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        return Bitmap.createBitmap(source, 0, 0, source.getWidth() - 100, source.getHeight(),
+                matrix, true);
+    }
+
 }
