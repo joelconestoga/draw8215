@@ -19,10 +19,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+//Java class with helper methods for image transformations
 public class ImageUtils {
 
+    //Create an empty file for a Photo
     public static File createPhotoEmptyFile(Context context) {
 
+        //Create a unique name based on timestamp
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CANADA).format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
@@ -37,11 +40,13 @@ public class ImageUtils {
         return image;
     }
 
+    //Generate an URI for a photo file
     public static Uri getUri(Context context, File photoFile) {
         return FileProvider.getUriForFile(context,
                 "ca.joel.photodraw.fileprovider", photoFile);
     }
 
+    //Grant permissions for an URI - required for using camera and external files
     public static void grantUriPermissions(Context context, Intent intent, Uri photoURI) {
         List<ResolveInfo> resolvedIntentActivities = context.getPackageManager().
                 queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
@@ -54,8 +59,10 @@ public class ImageUtils {
         }
     }
 
+    //Retrieve the actual photo saved by the camera
     public static Bitmap retrieveImageFromFile(String photoPath, int targetW, int targetH) {
 
+        //Customize some options
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
         bmOptions.inJustDecodeBounds = true;
 
@@ -67,19 +74,21 @@ public class ImageUtils {
         // Determine how much to scale down the image
         int scaleFactor = Math.min(photoW/targetW, photoH/targetH);
 
-        // Decode the image file into a Bitmap sized to fill the View
         bmOptions.inJustDecodeBounds = false;
         bmOptions.inSampleSize = scaleFactor;
         bmOptions.inPurgeable = true;
 
+        //Decode the file into a Bitmap
         return BitmapFactory.decodeFile(photoPath, bmOptions);
     }
 
+    //Rotate the image, as cameras always take picture in landscape
     public static Bitmap rotateImage(String photoPath, Bitmap photo) {
 
         ExifInterface ei;
         int orientation = 0;
 
+        //Check the phone's orientation
         try {
             ei = new ExifInterface(photoPath);
             orientation = ei.getAttributeInt(
@@ -89,6 +98,7 @@ public class ImageUtils {
             e.printStackTrace();
         }
 
+        //Evaluate the orientation and rotate accordingly
         switch(orientation) {
 
             case ExifInterface.ORIENTATION_ROTATE_90:
@@ -111,6 +121,7 @@ public class ImageUtils {
         return photo;
     }
 
+    //Rotate the Bitmap using matrix
     private static Bitmap doRotate(Bitmap source, float angle) {
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);

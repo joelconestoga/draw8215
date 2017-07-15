@@ -16,6 +16,7 @@ import android.widget.EditText;
 import java.io.File;
 import java.io.FileOutputStream;
 
+//Java class with all logic for drawing/displaying
 public class DrawingView extends View {
 
     private static final float TOUCH_TOLERANCE = 4;
@@ -36,20 +37,24 @@ public class DrawingView extends View {
 
     private boolean isDrawing = true;
 
+    //Constructor
     public DrawingView(Context c) {
         super(c);
 
+        //Initialize drawing components
         setupDraw();
         setupBrush();
         setupWriter();
     }
 
+    //Set the photo in the canvas
     public void setCanvasImage(Bitmap photo) {
         canvasImage = photo;
         canvas.drawBitmap(canvasImage, 0, 0, null);
         canvas.setBitmap(canvasImage);
     }
 
+    //Save the photo into a file
     public void saveCanvasImage(String photoFilePath) {
         File file = new File(photoFilePath);
         try {
@@ -59,16 +64,20 @@ public class DrawingView extends View {
         }
     }
 
+    //Set "DRAWING" mode
     public void setDrawing() {
         isDrawing = true;
         canvasText = "";
     }
 
+    //Set "WRITING" mode
     public void setWriting() {
         isDrawing = false;
+        //Request user input for text
         createAlertForUserInput();
     }
 
+    //Setup the drawing details
     private void setupDraw() {
         draw = new Paint();
         draw.setAntiAlias(true);
@@ -82,6 +91,7 @@ public class DrawingView extends View {
         drawPath = new Path();
     }
 
+    //Setup the round brush
     private void setupBrush() {
         roundBrush = new Paint();
         roundBrush.setAntiAlias(true);
@@ -93,6 +103,7 @@ public class DrawingView extends View {
         roundBrushPath = new Path();
     }
 
+    //Setup the writer for text input
     private void setupWriter() {
         canvasWriter = new Paint();
         canvasWriter.setStyle(Paint.Style.FILL);
@@ -102,31 +113,36 @@ public class DrawingView extends View {
         canvasWriter.setAntiAlias(true);
     }
 
+    //Setup canvas on resizing
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-
         canvasImage = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(canvasImage);
     }
 
+    //Draw event, where drawing logic happens
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        //Draw the background
         canvas.drawBitmap(canvasImage, 0, 0, draw);
 
+        //Draw the path and the round brush
         if (isDrawing) {
             canvas.drawPath(drawPath, draw);
             canvas.drawPath(roundBrushPath, roundBrush);
         }
     }
 
+    //Handling the user touch, to display live drawing
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         float eventX = event.getX();
         float eventY = event.getY();
 
+        //Handle press, move and release on the screen
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 touch_start(eventX, eventY);
@@ -142,12 +158,14 @@ public class DrawingView extends View {
                 break;
         }
 
+        //Write the text at the touched position
         if (!isDrawing && !"".equals(canvasText))
             canvas.drawText(canvasText, x, y, canvasWriter);
 
         return true;
     }
 
+    //Handling when the touch starts
     private void touch_start(float x, float y) {
         drawPath.reset();
         drawPath.moveTo(x, y);
@@ -155,6 +173,7 @@ public class DrawingView extends View {
         this.y = y;
     }
 
+    //Handling when the touch moves, while pressed
     private void touch_move(float x, float y) {
         float dx = Math.abs(x - this.x);
         float dy = Math.abs(y - this.y);
@@ -168,6 +187,7 @@ public class DrawingView extends View {
         }
     }
 
+    //Handling when the touch is released
     private void touch_up() {
 
         if (!isDrawing)
@@ -175,12 +195,11 @@ public class DrawingView extends View {
 
         drawPath.lineTo(x, y);
         roundBrushPath.reset();
-        // commit the path to our offscreen
         canvas.drawPath(drawPath, draw);
-        // kill this so we don't double draw
         drawPath.reset();
     }
 
+    //Create a Dialog for user text input
     private void createAlertForUserInput() {
         AlertDialog.Builder alert = new AlertDialog.Builder(getContext());
 
